@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>European Small Cap Value Screener</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --bg2: #1a1d27;
+      --bg3: #22263a;
+      --border: #2e3450;
+      --accent: #4f8ef7;
+      --accent2: #6ee7b7;
+      --text: #e2e8f0;
+      --text2: #8892a4;
+      --positive: #4ade80;
+      --negative: #f87171;
+      --warning: #fbbf24;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .badge {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .btn {
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: #3b7de8; }
+    .btn-secondary {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--border); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* LAYOUT */
+    .layout {
+      display: flex;
+      height: calc(100vh - 57px);
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .filter-section h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text2);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .filter-item label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 6px;
+    }
+    .filter-item label span {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .range-row input[type=range] {
+      flex: 1;
+      height: 4px;
+      -webkit-appearance: none;
+      background: var(--bg3);
+      border-radius: 2px;
+      outline: none;
+    }
+    .range-row input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    .number-input {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 5px;
+      padding: 4px 7px;
+      font-size: 12px;
+      width: 60px;
+      text-align: right;
+    }
+    .number-input:focus { outline: none; border-color: var(--accent); }
+
+    .select-input {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 5px;
+      padding: 7px 10px;
+      font-size: 13px;
+      width: 100%;
+      outline: none;
+      cursor: pointer;
+    }
+    .select-input:focus { border-color: var(--accent); }
+
+    /* MAIN */
+    .main {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      min-width: 180px;
+      max-width: 320px;
+    }
+    .search-box input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 7px 12px 7px 34px;
+      font-size: 13px;
+      outline: none;
+    }
+    .search-box input:focus { border-color: var(--accent); }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text2);
+      font-size: 14px;
+    }
+
+    .stats-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text2);
+      flex-wrap: wrap;
+    }
+    .stats-row strong { color: var(--text); }
+
+    /* TABLE */
+    .table-wrap {
+      flex: 1;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      background: var(--bg2);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th:hover { color: var(--text); }
+    thead th.sorted { color: var(--accent); }
+    thead th .sort-arrow { margin-left: 4px; opacity: 0.5; }
+    thead th.sorted .sort-arrow { opacity: 1; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    tbody tr:hover { background: var(--bg2); }
+
+    td {
+      padding: 10px 14px;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    .ticker-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .ticker { font-weight: 700; color: var(--accent); font-size: 13px; }
+    .company-name { font-size: 11px; color: var(--text2); max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+
+    .metric {
+      font-weight: 500;
+      text-align: right;
+    }
+    .metric.good { color: var(--positive); }
+    .metric.ok { color: var(--warning); }
+    .metric.bad { color: var(--negative); }
+    .metric.neutral { color: var(--text); }
+    .metric.na { color: var(--text2); font-style: italic; }
+
+    .country-badge {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    .sector-badge {
+      background: rgba(79, 142, 247, 0.1);
+      border: 1px solid rgba(79, 142, 247, 0.25);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 11px;
+      color: var(--accent);
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    .mcap-cell { color: var(--text); font-weight: 500; }
+
+    /* SCORE BADGE */
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 22px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .score-5 { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+    .score-4 { background: rgba(74, 222, 128, 0.12); color: #86efac; }
+    .score-3 { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+    .score-2 { background: rgba(248, 113, 113, 0.12); color: #f87171; }
+    .score-1 { background: rgba(248, 113, 113, 0.2); color: #ef4444; }
+
+    /* STATUS */
+    .status-bar {
+      padding: 8px 20px;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text2);
+    }
+
+    /* LOADING */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 17, 23, 0.85);
+      z-index: 50;
+      gap: 16px;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: var(--text2); font-size: 14px; }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text2);
+    }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; margin-bottom: 6px; }
+    .empty-state small { font-size: 12px; opacity: 0.6; }
+
+    /* API KEY MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      width: 440px;
+      max-width: 90vw;
+    }
+    .modal h2 { font-size: 18px; margin-bottom: 8px; }
+    .modal p { color: var(--text2); font-size: 13px; line-height: 1.6; margin-bottom: 20px; }
+    .modal input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 16px;
+      font-family: monospace;
+    }
+    .modal input:focus { border-color: var(--accent); }
+    .modal .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-hint { font-size: 11px; color: var(--text2); margin-top: 10px; opacity: 0.7; }
+
+    /* PAGINATION */
+    .pagination {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .page-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 5px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .page-btn:hover { background: var(--border); }
+    .page-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .page-info { font-size: 12px; color: var(--text2); }
+
+    /* TOOLTIP */
+    [data-tip] {
+      position: relative;
+      cursor: help;
+    }
+    [data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 5px;
+      padding: 5px 9px;
+      font-size: 11px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .sidebar { width: 240px; min-width: 240px; }
+    }
+    @media (max-width: 700px) {
+      .layout { flex-direction: column; }
+      .sidebar { width: 100%; min-width: unset; height: auto; border-right: none; border-bottom: 1px solid var(--border); max-height: 300px; }
+    }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+
+    .error-banner {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      color: #f87171;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin: 12px 20px;
+    }
+    .link-cell a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 12px;
+    }
+    .link-cell a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <h2>🔑 Configurar API Key</h2>
+    <p>Introduce tu API key de <strong>Financial Modeling Prep</strong> para cargar datos reales de empresas europeas. Se guarda en tu navegador.</p>
+    <input type="password" id="apiKeyInput" placeholder="Tu FMP API key..." autocomplete="off" />
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="skipModal()">Usar datos demo</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">Guardar y cargar</button>
+    </div>
+    <p class="modal-hint">Consigue una key gratuita en financialmodelingprep.com • 250 llamadas/día en plan free</p>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">EuroValue Screener</div>
+    <div class="badge">Beta • Small &amp; Mid Caps</div>
+  </div>
+  <div class="header-right">
+    <span id="lastUpdate" style="font-size:12px;color:var(--text2)"></span>
+    <button class="btn btn-secondary" onclick="showApiModal()">⚙ API Key</button>
+    <button class="btn btn-primary" id="refreshBtn" onclick="loadData()">↻ Actualizar</button>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout" style="position:relative">
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay" id="loadingOverlay" style="display:none">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando datos...</div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <div class="filter-section">
+      <h3>Universo</h3>
+      <div class="filter-group">
+        <div class="filter-item">
+          <label>Market Cap Mín (M€)</label>
+          <div class="range-row">
+            <input type="range" id="mcapMin" min="50" max="2000" value="100" step="50" oninput="updateFilter('mcapMin')">
+            <input type="number" class="number-input" id="mcapMinVal" value="100" onchange="syncSlider('mcapMin')">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Market Cap Máx (M€)</label>
+          <div class="range-row">
+            <input type="range" id="mcapMax" min="100" max="10000" value="2000" step="100" oninput="updateFilter('mcapMax')">
+            <input type="number" class="number-input" id="mcapMaxVal" value="2000" onchange="syncSlider('mcapMax')">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>País</label>
+          <select class="select-input" id="countryFilter" onchange="applyFilters()">
+            <option value="">Todos los países EU</option>
+            <option value="DE">Alemania</option>
+            <option value="FR">Francia</option>
+            <option value="ES">España</option>
+            <option value="IT">Italia</option>
+            <option value="NL">Países Bajos</option>
+            <option value="SE">Suecia</option>
+            <option value="CH">Suiza</option>
+            <option value="GB">Reino Unido</option>
+            <option value="AT">Austria</option>
+            <option value="BE">Bélgica</option>
+            <option value="DK">Dinamarca</option>
+            <option value="FI">Finlandia</option>
+            <option value="NO">Noruega</option>
+            <option value="PT">Portugal</option>
+            <option value="PL">Polonia</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Sector</label>
+          <select class="select-input" id="sectorFilter" onchange="applyFilters()">
+            <option value="">Todos los sectores</option>
+            <option value="Technology">Tecnología</option>
+            <option value="Consumer Cyclical">Consumo Cíclico</option>
+            <option value="Consumer Defensive">Consumo Básico</option>
+            <option value="Healthcare">Salud</option>
+            <option value="Industrials">Industriales</option>
+            <option value="Financial Services">Financiero</option>
+            <option value="Basic Materials">Materiales</option>
+            <option value="Energy">Energía</option>
+            <option value="Real Estate">Inmobiliario</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Communication Services">Comunicaciones</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <h3>Valoración</h3>
+      <div class="filter-group">
+        <div class="filter-item">
+          <label>P/E Ratio Máx <span id="peVal">30</span></label>
+          <div class="range-row">
+            <input type="range" id="peMax" min="0" max="100" value="30" step="1" oninput="updateFilter('peMax')">
+            <input type="number" class="number-input" id="peMaxVal" value="30" onchange="syncSlider('peMax')">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>P/B Ratio Máx <span id="pbVal">3</span></label>
+          <div class="range-row">
+            <input type="range" id="pbMax" min="0" max="20" value="3" step="0.1" oninput="updateFilter('pbMax')">
+            <input type="number" class="number-input" id="pbMaxVal" value="3" onchange="syncSlider('pbMax')">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>EV/EBITDA Máx <span id="evVal">15</span></label>
+          <div class="range-row">
+            <input type="range" id="evMax" min="0" max="50" value="15" step="0.5" oninput="updateFilter('evMax')">
+            <input type="number" class="number-input" id="evMaxVal" value="15" onchange="syncSlider('evMax')">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <h3>Calidad</h3>
+      <div class="filter-group">
+        <div class="filter-item">
+          <label>ROE Mín (%) <span id="roeVal">10</span></label>
+          <div class="range-row">
+            <input type="range" id="roeMin" min="0" max="50" value="10" step="1" oninput="updateFilter('roeMin')">
+            <input type="number" class="number-input" id="roeMinVal" value="10" onchange="syncSlider('roeMin')">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Margen Neto Mín (%) <span id="marginVal">5</span></label>
+          <div class="range-row">
+            <input type="range" id="marginMin" min="0" max="40" value="5" step="1" oninput="updateFilter('marginMin')">
+            <input type="number" class="number-input" id="marginMinVal" value="5" onchange="syncSlider('marginMin')">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Deuda/EBITDA Máx <span id="debtVal">3</span></label>
+          <div class="range-row">
+            <input type="range" id="debtMax" min="0" max="10" value="3" step="0.1" oninput="updateFilter('debtMax')">
+            <input type="number" class="number-input" id="debtMaxVal" value="3" onchange="syncSlider('debtMax')">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <h3>Dividendo</h3>
+      <div class="filter-group">
+        <div class="filter-item">
+          <label>Yield Mín (%) <span id="yieldVal">0</span></label>
+          <div class="range-row">
+            <input type="range" id="yieldMin" min="0" max="10" value="0" step="0.5" oninput="updateFilter('yieldMin')">
+            <input type="number" class="number-input" id="yieldMinVal" value="0" onchange="syncSlider('yieldMin')">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" style="margin-top:4px" onclick="resetFilters()">↺ Resetear filtros</button>
+
+  </div>
+
+  <!-- MAIN PANEL -->
+  <div class="main">
+    <div class="toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar empresa o ticker..." oninput="applyFilters()">
+      </div>
+      <div class="stats-row">
+        <span>Mostrando <strong id="countShown">0</strong> de <strong id="countTotal">0</strong> empresas</span>
+        <span id="modeIndicator"></span>
+      </div>
+    </div>
+
+    <div id="errorBanner" class="error-banner" style="display:none"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('companyName')" class="sorted" id="th-companyName">Empresa <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('country')">País <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('sector')">Sector <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('mktCap')" data-tip="Market capitalización (M€)">MCap M€ <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('peRatio')" data-tip="Price / Earnings">P/E <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('pbRatio')" data-tip="Price / Book Value">P/B <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('evEbitda')" data-tip="Enterprise Value / EBITDA">EV/EBITDA <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('roe')" data-tip="Return on Equity">ROE % <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('netMargin')" data-tip="Margen neto">Marg. % <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('debtEbitda')" data-tip="Deuda neta / EBITDA">D/EBITDA <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('dividendYield')" data-tip="Dividend yield">Yield % <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('score')" data-tip="Puntuación value compuesta (0-5)">Score <span class="sort-arrow">↕</span></th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display:none">
+        <div class="icon">🔎</div>
+        <p>No hay empresas con estos filtros</p>
+        <small>Prueba a ampliar los rangos de búsqueda</small>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <span id="statusMsg">Listo</span>
+      <div class="pagination" id="paginationArea"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===================== CONFIG =====================
+const API_BASE = 'https://financialmodelingprep.com/api/v3';
+const ITEMS_PER_PAGE = 50;
+
+let apiKey = '';
+let allData = [];
+let filteredData = [];
+let currentPage = 1;
+let sortKey = 'score';
+let sortDir = -1;
+let demoMode = false;
+
+// ===================== INIT =====================
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('fmp_api_key');
+  if (saved) {
+    apiKey = saved;
+    document.getElementById('apiKeyInput').value = saved;
+    document.getElementById('apiModal').style.display = 'none';
+    loadData();
+  } else {
+    document.getElementById('apiModal').style.display = 'flex';
+  }
+});
+
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) { alert('Introduce una API key válida'); return; }
+  apiKey = val;
+  localStorage.setItem('fmp_api_key', val);
+  document.getElementById('apiModal').style.display = 'none';
+  demoMode = false;
+  loadData();
+}
+
+function skipModal() {
+  document.getElementById('apiModal').style.display = 'none';
+  demoMode = true;
+  loadDemoData();
+}
+
+function showApiModal() {
+  const val = localStorage.getItem('fmp_api_key') || '';
+  document.getElementById('apiKeyInput').value = val;
+  document.getElementById('apiModal').style.display = 'flex';
+}
+
+// ===================== FILTERS =====================
+const filterDefs = {
+  mcapMin:   { slider: 'mcapMin',   valEl: 'mcapMinVal',  label: null },
+  mcapMax:   { slider: 'mcapMax',   valEl: 'mcapMaxVal',  label: null },
+  peMax:     { slider: 'peMax',     valEl: 'peMaxVal',    label: 'peVal' },
+  pbMax:     { slider: 'pbMax',     valEl: 'pbMaxVal',    label: 'pbVal' },
+  evMax:     { slider: 'evMax',     valEl: 'evMaxVal',    label: 'evVal' },
+  roeMin:    { slider: 'roeMin',    valEl: 'roeMinVal',   label: 'roeVal' },
+  marginMin: { slider: 'marginMin', valEl: 'marginMinVal',label: 'marginVal' },
+  debtMax:   { slider: 'debtMax',   valEl: 'debtMaxVal',  label: 'debtVal' },
+  yieldMin:  { slider: 'yieldMin',  valEl: 'yieldMinVal', label: 'yieldVal' },
+};
+
+function updateFilter(id) {
+  const def = filterDefs[id];
+  const val = parseFloat(document.getElementById(def.slider).value);
+  document.getElementById(def.valEl).value = val;
+  if (def.label) document.getElementById(def.label).textContent = val;
+  applyFilters();
+}
+
+function syncSlider(id) {
+  const def = filterDefs[id];
+  const val = parseFloat(document.getElementById(def.valEl).value);
+  document.getElementById(def.slider).value = val;
+  if (def.label) document.getElementById(def.label).textContent = val;
+  applyFilters();
+}
+
+function getFilters() {
+  return {
+    mcapMin: parseFloat(document.getElementById('mcapMinVal').value) * 1e6,
+    mcapMax: parseFloat(document.getElementById('mcapMaxVal').value) * 1e6,
+    peMax: parseFloat(document.getElementById('peMaxVal').value),
+    pbMax: parseFloat(document.getElementById('pbMaxVal').value),
+    evMax: parseFloat(document.getElementById('evMaxVal').value),
+    roeMin: parseFloat(document.getElementById('roeMinVal').value),
+    marginMin: parseFloat(document.getElementById('marginMinVal').value),
+    debtMax: parseFloat(document.getElementById('debtMaxVal').value),
+    yieldMin: parseFloat(document.getElementById('yieldMinVal').value),
+    country: document.getElementById('countryFilter').value,
+    sector: document.getElementById('sectorFilter').value,
+    search: document.getElementById('searchInput').value.trim().toLowerCase(),
+  };
+}
+
+function applyFilters() {
+  const f = getFilters();
+  filteredData = allData.filter(d => {
+    if (d.mktCap < f.mcapMin || d.mktCap > f.mcapMax) return false;
+    if (f.peMax > 0 && d.peRatio !== null && d.peRatio > f.peMax) return false;
+    if (f.pbMax > 0 && d.pbRatio !== null && d.pbRatio > f.pbMax) return false;
+    if (f.evMax > 0 && d.evEbitda !== null && d.evEbitda > f.evMax) return false;
+    if (f.roeMin > 0 && d.roe !== null && d.roe < f.roeMin) return false;
+    if (f.marginMin > 0 && d.netMargin !== null && d.netMargin < f.marginMin) return false;
+    if (f.debtMax > 0 && d.debtEbitda !== null && d.debtEbitda > f.debtMax) return false;
+    if (f.yieldMin > 0 && (d.dividendYield === null || d.dividendYield < f.yieldMin)) return false;
+    if (f.country && d.country !== f.country) return false;
+    if (f.sector && d.sector !== f.sector) return false;
+    if (f.search) {
+      const hay = (d.companyName + ' ' + d.symbol).toLowerCase();
+      if (!hay.includes(f.search)) return false;
+    }
+    return true;
+  });
+
+  sortData();
+  currentPage = 1;
+  renderTable();
+  document.getElementById('countShown').textContent = filteredData.length;
+  document.getElementById('countTotal').textContent = allData.length;
+}
+
+function resetFilters() {
+  document.getElementById('mcapMinVal').value = 100; document.getElementById('mcapMin').value = 100;
+  document.getElementById('mcapMaxVal').value = 2000; document.getElementById('mcapMax').value = 2000;
+  document.getElementById('peMaxVal').value = 30; document.getElementById('peMax').value = 30; document.getElementById('peVal').textContent = 30;
+  document.getElementById('pbMaxVal').value = 3; document.getElementById('pbMax').value = 3; document.getElementById('pbVal').textContent = 3;
+  document.getElementById('evMaxVal').value = 15; document.getElementById('evMax').value = 15; document.getElementById('evVal').textContent = 15;
+  document.getElementById('roeMinVal').value = 10; document.getElementById('roeMin').value = 10; document.getElementById('roeVal').textContent = 10;
+  document.getElementById('marginMinVal').value = 5; document.getElementById('marginMin').value = 5; document.getElementById('marginVal').textContent = 5;
+  document.getElementById('debtMaxVal').value = 3; document.getElementById('debtMax').value = 3; document.getElementById('debtVal').textContent = 3;
+  document.getElementById('yieldMinVal').value = 0; document.getElementById('yieldMin').value = 0; document.getElementById('yieldVal').textContent = 0;
+  document.getElementById('countryFilter').value = '';
+  document.getElementById('sectorFilter').value = '';
+  document.getElementById('searchInput').value = '';
+  applyFilters();
+}
+
+// ===================== DATA LOADING =====================
+async function loadData() {
+  if (demoMode) { loadDemoData(); return; }
+  if (!apiKey) { showApiModal(); return; }
+
+  showLoading('Cargando empresas europeas...');
+  hideError();
+  document.getElementById('refreshBtn').disabled = true;
+
+  try {
+    // Build screener URL — European exchanges, small-mid cap
+    const params = new URLSearchParams({
+      marketCapMoreThan: '100000000',
+      marketCapLowerThan: '2000000000',
+      country: 'DE,FR,ES,IT,NL,SE,CH,AT,BE,DK,FI,NO,PT,PL,GB',
+      limit: '500',
+      apikey: apiKey,
+      isEtf: 'false',
+      isFund: 'false',
+      isActivelyTrading: 'true',
+    });
+
+    setLoadingText('Consultando screener FMP...');
+    const url = `${API_BASE}/stock-screener?${params}`;
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      if (res.status === 401) throw new Error('API key inválida o expirada. Revísala en ⚙ API Key.');
+      if (res.status === 403) throw new Error('Tu plan FMP no permite este endpoint. Necesitas plan Basic o superior.');
+      throw new Error(`Error HTTP ${res.status}`);
+    }
+
+    const json = await res.json();
+
+    if (!Array.isArray(json)) {
+      if (json['Error Message']) throw new Error('FMP: ' + json['Error Message']);
+      throw new Error('Respuesta inesperada de la API');
+    }
+
+    setLoadingText(`Procesando ${json.length} empresas...`);
+    allData = json.map(normalizeStock).filter(d => d.mktCap > 0);
+
+    document.getElementById('lastUpdate').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-ES');
+    document.getElementById('modeIndicator').textContent = '📡 Datos en tiempo real';
+
+    hideLoading();
+    applyFilters();
+    setStatus(`${allData.length} empresas cargadas desde FMP`);
+
+  } catch (err) {
+    hideLoading();
+    showError(err.message);
+    // Fallback to demo
+    if (allData.length === 0) {
+      setStatus('Usando datos de demo por error de API');
+      demoMode = true;
+      loadDemoData();
+    }
+  }
+
+  document.getElementById('refreshBtn').disabled = false;
+}
+
+function normalizeStock(d) {
+  return {
+    symbol: d.symbol || '',
+    companyName: d.companyName || d.name || d.symbol || '',
+    country: d.country || '',
+    sector: d.sector || '',
+    mktCap: d.marketCap || 0,
+    price: d.price || null,
+    peRatio: d.pe || null,
+    pbRatio: d.pb || null,
+    evEbitda: d.evEbitda || null,
+    roe: d.returnOnEquity ? d.returnOnEquity * 100 : null,
+    netMargin: d.netProfitMargin ? d.netProfitMargin * 100 : null,
+    debtEbitda: null, // not in screener, would need key metrics
+    dividendYield: d.lastAnnualDividend && d.price ? (d.lastAnnualDividend / d.price * 100) : (d.dividendYield || null),
+    score: 0,
+  };
+}
+
+// ===================== DEMO DATA =====================
+function loadDemoData() {
+  allData = generateDemoData();
+  demoMode = true;
+  document.getElementById('modeIndicator').textContent = '🧪 Modo demo — sin API key real';
+  document.getElementById('lastUpdate').textContent = 'Demo';
+  applyFilters();
+  setStatus('Datos de demostración. Configura tu API key para datos reales.');
+}
+
+function generateDemoData() {
+  const companies = [
+    { symbol:'TOM2.DE', name:'Tom Tailor Group', country:'DE', sector:'Consumer Cyclical', mcap:320e6, pe:8.2, pb:0.9, ev:7.1, roe:14.2, margin:4.1, debt:1.8, yield:0 },
+    { symbol:'EVT.DE', name:'Evotec SE', country:'DE', sector:'Healthcare', mcap:980e6, pe:null, pb:1.4, ev:null, roe:-8.1, margin:-12.3, debt:0.4, yield:0 },
+    { symbol:'PFV.DE', name:'Pfeiffer Vacuum', country:'DE', sector:'Industrials', mcap:1200e6, pe:22.1, pb:3.1, ev:13.4, roe:15.8, margin:9.2, debt:0.1, yield:1.8 },
+    { symbol:'SFM.PA', name:'Solutions 30 SE', country:'FR', sector:'Technology', mcap:450e6, pe:12.3, pb:1.8, ev:9.8, roe:18.4, margin:6.7, debt:1.2, yield:0.5 },
+    { symbol:'IDL.PA', name:'Idemia Group', country:'FR', sector:'Technology', mcap:780e6, pe:16.5, pb:2.2, ev:10.2, roe:12.1, margin:7.8, debt:2.1, yield:0 },
+    { symbol:'MCH.PA', name:'MC Holdings', country:'FR', sector:'Financial Services', mcap:620e6, pe:9.4, pb:0.8, ev:null, roe:9.8, margin:22.1, debt:null, yield:3.2 },
+    { symbol:'BME.MC', name:'Bolsas y Mercados', country:'ES', sector:'Financial Services', mcap:1850e6, pe:18.7, pb:4.5, ev:14.2, roe:28.3, margin:35.4, debt:-0.5, yield:4.1 },
+    { symbol:'TL0.MC', name:'Talgo S.A.', country:'ES', sector:'Industrials', mcap:420e6, pe:21.3, pb:1.6, ev:11.8, roe:8.4, margin:5.2, debt:2.4, yield:1.2 },
+    { symbol:'PRS.MC', name:'Prisa Group', country:'ES', sector:'Communication Services', mcap:290e6, pe:null, pb:0.6, ev:7.1, roe:-4.2, margin:-2.8, debt:3.8, yield:0 },
+    { symbol:'IT.MI', name:'Italmobiliare', country:'IT', sector:'Financial Services', mcap:980e6, pe:11.2, pb:0.7, ev:null, roe:7.1, margin:18.3, debt:null, yield:2.8 },
+    { symbol:'TIT.MI', name:'Telecom Italia', country:'IT', sector:'Communication Services', mcap:1760e6, pe:null, pb:0.4, ev:5.8, roe:-6.2, margin:-4.1, debt:4.2, yield:0 },
+    { symbol:'REC.MI', name:'Recordati', country:'IT', sector:'Healthcare', mcap:1900e6, pe:19.4, pb:3.8, ev:12.6, roe:22.8, margin:18.7, debt:1.9, yield:1.4 },
+    { symbol:'BESI.AS', name:'BE Semiconductor', country:'NL', sector:'Technology', mcap:1650e6, pe:28.3, pb:7.2, ev:19.4, roe:35.6, margin:28.4, debt:-1.2, yield:2.1 },
+    { symbol:'ALFEN.AS', name:'Alfen NV', country:'NL', sector:'Industrials', mcap:850e6, pe:32.1, pb:3.1, ev:18.9, roe:12.4, margin:8.1, debt:0.6, yield:0 },
+    { symbol:'CAST.AS', name:'Casteels', country:'NL', sector:'Basic Materials', mcap:380e6, pe:14.2, pb:1.4, ev:8.9, roe:11.8, margin:7.3, debt:1.1, yield:2.4 },
+    { symbol:'THULE.ST', name:'Thule Group', country:'SE', sector:'Consumer Cyclical', mcap:960e6, pe:17.8, pb:4.1, ev:12.3, roe:26.4, margin:14.2, debt:1.3, yield:3.1 },
+    { symbol:'NEWA.ST', name:'NewAge Systems', country:'SE', sector:'Technology', mcap:420e6, pe:22.6, pb:2.9, ev:13.8, roe:16.3, margin:11.4, debt:0.7, yield:1.8 },
+    { symbol:'FABG.ST', name:'Fabege AB', country:'SE', sector:'Real Estate', mcap:1400e6, pe:12.4, pb:0.9, ev:16.4, roe:7.8, margin:28.4, debt:3.2, yield:3.8 },
+    { symbol:'HIAG.SW', name:'HIAG Immobilien', country:'CH', sector:'Real Estate', mcap:720e6, pe:14.1, pb:0.8, ev:14.8, roe:5.9, margin:32.1, debt:3.1, yield:2.4 },
+    { symbol:'DKSH.SW', name:'DKSH Holding', country:'CH', sector:'Industrials', mcap:1600e6, pe:16.3, pb:2.4, ev:10.1, roe:17.2, margin:3.8, debt:0.8, yield:3.4 },
+    { symbol:'MCH.SW', name:'MCH Group', country:'CH', sector:'Communication Services', mcap:280e6, pe:null, pb:1.2, ev:null, roe:-3.1, margin:-8.2, debt:1.4, yield:0 },
+    { symbol:'IG4.L', name:'IG Group Holdings', country:'GB', sector:'Financial Services', mcap:1850e6, pe:11.4, pb:2.8, ev:null, roe:24.1, margin:28.4, debt:null, yield:5.8 },
+    { symbol:'TW.L', name:'Taylor Wimpey', country:'GB', sector:'Consumer Cyclical', mcap:1950e6, pe:9.8, pb:1.2, ev:7.8, roe:14.8, margin:11.2, debt:-0.3, yield:6.4 },
+    { symbol:'TLW.L', name:'Tullow Oil', country:'GB', sector:'Energy', mcap:580e6, pe:null, pb:0.8, ev:3.2, roe:-12.3, margin:-18.4, debt:2.8, yield:0 },
+    { symbol:'NOBI.OL', name:'Nobia AB', country:'NO', sector:'Consumer Cyclical', mcap:390e6, pe:null, pb:0.7, ev:6.4, roe:-8.4, margin:-4.1, debt:2.3, yield:0 },
+    { symbol:'YAR.OL', name:'Yara International', country:'NO', sector:'Basic Materials', mcap:1800e6, pe:14.2, pb:1.1, ev:7.2, roe:8.4, margin:4.8, debt:1.4, yield:4.2 },
+    { symbol:'KGH.WA', name:'KGHM Polska Miedz', country:'PL', sector:'Basic Materials', mcap:1950e6, pe:7.8, pb:0.8, ev:5.4, roe:11.4, margin:8.2, debt:0.9, yield:3.1 },
+    { symbol:'PGE.WA', name:'PGE Group', country:'PL', sector:'Utilities', mcap:1750e6, pe:9.4, pb:0.5, ev:4.8, roe:6.2, margin:5.4, debt:2.1, yield:2.4 },
+    { symbol:'EDP.LS', name:'EDP Renováveis', country:'PT', sector:'Utilities', mcap:1800e6, pe:16.8, pb:1.4, ev:12.4, roe:9.2, margin:14.2, debt:3.8, yield:1.8 },
+    { symbol:'GALP.LS', name:'Galp Energia', country:'PT', sector:'Energy', mcap:1900e6, pe:11.2, pb:1.8, ev:5.4, roe:18.4, margin:7.8, debt:0.4, yield:4.8 },
+  ];
+
+  return companies.map(c => ({
+    symbol: c.symbol,
+    companyName: c.name,
+    country: c.country,
+    sector: c.sector,
+    mktCap: c.mcap,
+    price: null,
+    peRatio: c.pe,
+    pbRatio: c.pb,
+    evEbitda: c.ev,
+    roe: c.roe,
+    netMargin: c.margin,
+    debtEbitda: c.debt,
+    dividendYield: c.yield,
+    score: 0,
+  }));
+}
+
+// ===================== SCORING =====================
+function computeScore(d) {
+  let pts = 0, max = 0;
+
+  if (d.peRatio !== null) {
+    max += 1;
+    if (d.peRatio < 10) pts += 1;
+    else if (d.peRatio < 15) pts += 0.7;
+    else if (d.peRatio < 20) pts += 0.4;
+  }
+  if (d.pbRatio !== null) {
+    max += 1;
+    if (d.pbRatio < 1) pts += 1;
+    else if (d.pbRatio < 1.5) pts += 0.7;
+    else if (d.pbRatio < 2.5) pts += 0.4;
+  }
+  if (d.evEbitda !== null) {
+    max += 1;
+    if (d.evEbitda < 7) pts += 1;
+    else if (d.evEbitda < 10) pts += 0.7;
+    else if (d.evEbitda < 14) pts += 0.4;
+  }
+  if (d.roe !== null) {
+    max += 1;
+    if (d.roe > 20) pts += 1;
+    else if (d.roe > 12) pts += 0.7;
+    else if (d.roe > 6) pts += 0.3;
+  }
+  if (d.netMargin !== null) {
+    max += 1;
+    if (d.netMargin > 15) pts += 1;
+    else if (d.netMargin > 8) pts += 0.7;
+    else if (d.netMargin > 3) pts += 0.3;
+  }
+  if (d.debtEbitda !== null) {
+    max += 1;
+    if (d.debtEbitda < 0) pts += 1;
+    else if (d.debtEbitda < 1) pts += 0.9;
+    else if (d.debtEbitda < 2) pts += 0.6;
+    else if (d.debtEbitda < 3) pts += 0.3;
+  }
+
+  if (max === 0) return 0;
+  return Math.round((pts / max) * 5);
+}
+
+// ===================== SORT =====================
+function sortBy(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = -1; }
+
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+  document.getElementById('th-' + key)?.classList.add('sorted');
+
+  sortData();
+  renderTable();
+}
+
+function sortData() {
+  filteredData.forEach(d => d.score = computeScore(d));
+  filteredData.sort((a, b) => {
+    let av = a[sortKey], bv = b[sortKey];
+    if (av === null || av === undefined) return 1;
+    if (bv === null || bv === undefined) return -1;
+    if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
+    return (av - bv) * sortDir;
+  });
+}
+
+// ===================== RENDER =====================
+const COUNTRY_FLAGS = {DE:'🇩🇪',FR:'🇫🇷',ES:'🇪🇸',IT:'🇮🇹',NL:'🇳🇱',SE:'🇸🇪',CH:'🇨🇭',GB:'🇬🇧',AT:'🇦🇹',BE:'🇧🇪',DK:'🇩🇰',FI:'🇫🇮',NO:'🇳🇴',PT:'🇵🇹',PL:'🇵🇱'};
+
+function fmt(val, dec=1, suffix='') {
+  if (val === null || val === undefined || isNaN(val)) return '<span class="metric na">N/D</span>';
+  return val.toFixed(dec) + suffix;
+}
+
+function fmtMetric(val, dec=1, goodIf='low', low=10, high=20) {
+  if (val === null || val === undefined || isNaN(val)) return '<span class="metric na">N/D</span>';
+  const n = parseFloat(val);
+  let cls = 'neutral';
+  if (goodIf === 'low') cls = n < low ? 'good' : n > high ? 'bad' : 'ok';
+  else cls = n > high ? 'good' : n < low ? 'bad' : 'ok';
+  return `<span class="metric ${cls}">${n.toFixed(dec)}</span>`;
+}
+
+function fmtMcap(val) {
+  if (!val) return 'N/D';
+  const m = val / 1e6;
+  if (m >= 1000) return (m/1000).toFixed(1) + 'B';
+  return m.toFixed(0) + 'M';
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const start = (currentPage - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const page = filteredData.slice(start, end);
+
+  if (page.length === 0) {
+    tbody.innerHTML = '';
+    document.getElementById('emptyState').style.display = 'block';
+    renderPagination();
+    return;
+  }
+  document.getElementById('emptyState').style.display = 'none';
+
+  tbody.innerHTML = page.map(d => {
+    const flag = COUNTRY_FLAGS[d.country] || '🏳';
+    const scoreClass = `score-${d.score}`;
+    const yhLink = `https://finance.yahoo.com/quote/${d.symbol}`;
+
+    return `<tr>
+      <td><div class="ticker-cell"><span class="ticker">${d.symbol}</span><span class="company-name" title="${d.companyName}">${d.companyName}</span></div></td>
+      <td><span class="country-badge">${flag} ${d.country}</span></td>
+      <td><span class="sector-badge" title="${d.sector}">${d.sector}</span></td>
+      <td class="mcap-cell">${fmtMcap(d.mktCap)}</td>
+      <td>${fmtMetric(d.peRatio, 1, 'low', 12, 25)}</td>
+      <td>${fmtMetric(d.pbRatio, 1, 'low', 1.5, 3)}</td>
+      <td>${fmtMetric(d.evEbitda, 1, 'low', 8, 15)}</td>
+      <td>${fmtMetric(d.roe, 1, 'high', 8, 15)}</td>
+      <td>${fmtMetric(d.netMargin, 1, 'high', 5, 12)}</td>
+      <td>${fmtMetric(d.debtEbitda, 1, 'low', 1, 3)}</td>
+      <td>${fmtMetric(d.dividendYield, 1, 'high', 2, 4)}</td>
+      <td><span class="score-badge ${scoreClass}">${d.score}/5</span></td>
+      <td class="link-cell"><a href="${yhLink}" target="_blank" rel="noopener">Yahoo ↗</a></td>
+    </tr>`;
+  }).join('');
+
+  renderPagination();
+}
+
+function renderPagination() {
+  const total = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+  const area = document.getElementById('paginationArea');
+  if (total <= 1) { area.innerHTML = ''; return; }
+
+  let html = '';
+  if (currentPage > 1) html += `<button class="page-btn" onclick="goPage(${currentPage-1})">‹</button>`;
+  for (let i = Math.max(1, currentPage-2); i <= Math.min(total, currentPage+2); i++) {
+    html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  if (currentPage < total) html += `<button class="page-btn" onclick="goPage(${currentPage+1})">›</button>`;
+  html += `<span class="page-info">${currentPage}/${total}</span>`;
+  area.innerHTML = html;
+}
+
+function goPage(n) {
+  currentPage = n;
+  renderTable();
+  document.querySelector('.table-wrap').scrollTop = 0;
+}
+
+// ===================== UI HELPERS =====================
+function showLoading(msg) {
+  document.getElementById('loadingText').textContent = msg;
+  document.getElementById('loadingOverlay').style.display = 'flex';
+}
+function setLoadingText(msg) { document.getElementById('loadingText').textContent = msg; }
+function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+function setStatus(msg) { document.getElementById('statusMsg').textContent = msg; }
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+function hideError() { document.getElementById('errorBanner').style.display = 'none'; }
+</script>
+</body>
+</html>
